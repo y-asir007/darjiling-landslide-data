@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Darjeeling Landslide Susceptibility & Building Exposure</title>
+   
+   <!-- Leaflet CSS -->
+   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+   
+   <style>
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
+       
+       body {
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           background: #f5f5f5;
+       }
+       
+       /* Header */
+       #header {
+           background: linear-gradient(135deg, #1a5490 0%, #32b8c6 100%);
+           color: white;
+           padding: 20px;
+           text-align: center;
+           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+       }
+       
+       #header h1 {
+           font-size: 24px;
+           font-weight: 600;
+           margin-bottom: 5px;
+       }
+       
+       #header p {
+           font-size: 14px;
+           opacity: 0.9;
+       }
+       
+       /* Main container */
+       #container {
+           display: flex;
+           height: calc(100vh - 80px);
+       }
+       
+       /* Map */
+       #map {
+           flex: 1;
+           height: 100%;
+           position: relative;
+       }
+       
+       /* Sidebar */
+       #sidebar {
+           width: 320px;
+           background: white;
+           overflow-y: auto;
+           box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+           padding: 20px;
+       }
+       
+       .control-section {
+           margin-bottom: 25px;
+           padding-bottom: 20px;
+           border-bottom: 1px solid #e0e0e0;
+       }
+       
+       .control-section:last-child {
+           border-bottom: none;
+       }
+       
+       .control-section h3 {
+           font-size: 16px;
+           color: #1a5490;
+           margin-bottom: 15px;
+           font-weight: 600;
+       }
+       
+       /* Basemap selector */
+       .basemap-option {
+           display: block;
+           margin: 8px 0;
+           cursor: pointer;
+       }
+       
+       .basemap-option input {
+           margin-right: 8px;
+       }
+       
+       /* Layer controls */
+       .layer-control {
+           margin: 12px 0;
+       }
+       
+       .layer-control label {
+           display: flex;
+           align-items: center;
+           cursor: pointer;
+           font-size: 14px;
+       }
+       
+       .layer-control input[type="checkbox"] {
+           margin-right: 8px;
+           width: 18px;
+           height: 18px;
+           cursor: pointer;
+       }
+       
+       /* Opacity sliders */
+       .opacity-control {
+           margin: 15px 0;
+       }
+       
+       .opacity-control label {
+           display: block;
+           font-size: 13px;
+           color: #666;
+           margin-bottom: 5px;
+       }
+       
+       .opacity-control input[type="range"] {
+           width: 100%;
+           height: 4px;
+           -webkit-appearance: none;
+           appearance: none;
+           background: #ddd;
+           outline: none;
+           border-radius: 2px;
+       }
+       
+       .opacity-control input[type="range"]::-webkit-slider-thumb {
+           -webkit-appearance: none;
+           appearance: none;
+           width: 16px;
+           height: 16px;
+           background: #32b8c6;
+           cursor: pointer;
+           border-radius: 50%;
+       }
+       
+       .opacity-control input[type="range"]::-moz-range-thumb {
+           width: 16px;
+           height: 16px;
+           background: #32b8c6;
+           cursor: pointer;
+           border-radius: 50%;
+           border: none;
+       }
+       
+       .opacity-value {
+           float: right;
+           font-weight: 600;
+           color: #1a5490;
+       }
+       
+       /* Statistics */
+       .stat-row {
+           display: flex;
+           justify-content: space-between;
+           margin: 10px 0;
+           font-size: 13px;
+       }
+       
+       .stat-label {
+           color: #666;
+       }
+       
+       .stat-value {
+           font-weight: 600;
+           color: #333;
+       }
+       
+       .stat-value.high {
+           color: #e01b24;
+       }
+       
+       .stat-value.medium {
+           color: #e68835;
+       }
+       
+       .stat-value.low {
+           color: #22c55e;
+       }
+       
+       /* Legend */
+       .legend {
+           background: white;
+           padding: 15px;
+           border-radius: 8px;
+           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+       }
+       
+       .legend-title {
+           font-weight: 600;
+           margin-bottom: 10px;
+           font-size: 14px;
+       }
+       
+       .legend-item {
+           display: flex;
+           align-items: center;
+           margin: 8px 0;
+           font-size: 13px;
+       }
+       
+       .legend-color {
+           width: 20px;
+           height: 20px;
+           margin-right: 10px;
+           border: 1px solid #ccc;
+           border-radius: 3px;
+       }
+       
+       /* Loading spinner */
+       .loading {
+           position: absolute;
+           top: 50%;
+           left: 50%;
+           transform: translate(-50%, -50%);
+           background: white;
+           padding: 20px 40px;
+           border-radius: 8px;
+           box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+           font-size: 16px;
+           color: #1a5490;
+           z-index: 9999;
+           font-weight: 500;
+       }
+       
+       /* Responsive */
+       @media (max-width: 768px) {
+           #container {
+               flex-direction: column;
+           }
+           #sidebar {
+               width: 100%;
+               height: 40vh;
+               order: 2;
+           }
+           #map {
+               height: 60vh;
+               order: 1;
+           }
+           #header h1 {
+               font-size: 18px;
+           }
+           #header p {
+               font-size: 12px;
+           }
+       }
+   </style>
+</head>
+<body>
+   <!-- Header -->
+   <div id="header">
+       <h1>Darjeeling Landslide Susceptibility & Building Exposure</h1>
+       <p>Interactive Web Map | Logistic Regression Model (AUC: 0.767)</p>
+   </div>
+   
+   <!-- Main Container -->
+   <div id="container">
+       <!-- Map -->
+       <div id="map">
+           <div class="loading" id="loading">Loading map data...</div>
+       </div>
+       
+       <!-- Sidebar -->
+       <div id="sidebar">
+           <!-- Basemap Selector -->
+           <div class="control-section">
+               <h3>🗺️ Basemap</h3>
+               <label class="basemap-option">
+                   <input type="radio" name="basemap" value="osm" checked>
+                   OpenStreetMap
+               </label>
+               <label class="basemap-option">
+                   <input type="radio" name="basemap" value="satellite">
+                   Satellite (Esri)
+               </label>
+               <label class="basemap-option">
+                   <input type="radio" name="basemap" value="topo">
+                   Topographic
+               </label>
+           </div>
+           
+           <!-- Layer Visibility -->
+           <div class="control-section">
+               <h3>📊 Layers</h3>
+               <div class="layer-control">
+                   <label>
+                       <input type="checkbox" id="toggle-susceptibility" checked>
+                       Susceptibility (Continuous)
+                   </label>
+               </div>
+               <div class="layer-control">
+                   <label>
+                       <input type="checkbox" id="toggle-risk" checked>
+                       Risk Classes (Zones)
+                   </label>
+               </div>
+               <div class="layer-control">
+                   <label>
+                       <input type="checkbox" id="toggle-buildings" checked>
+                       Building Footprints
+                   </label>
+               </div>
+           </div>
+           
+           <!-- Opacity Controls -->
+           <div class="control-section">
+               <h3>🎨 Opacity</h3>
+               <div class="opacity-control">
+                   <label>
+                       Susceptibility 
+                       <span class="opacity-value" id="opacity-susc-value">70%</span>
+                   </label>
+                   <input type="range" id="opacity-susceptibility" min="0" max="100" value="70">
+               </div>
+               <div class="opacity-control">
+                   <label>
+                       Risk Classes 
+                       <span class="opacity-value" id="opacity-risk-value">50%</span>
+                   </label>
+                   <input type="range" id="opacity-risk" min="0" max="100" value="50">
+               </div>
+               <div class="opacity-control">
+                   <label>
+                       Buildings 
+                       <span class="opacity-value" id="opacity-build-value">60%</span>
+                   </label>
+                   <input type="range" id="opacity-buildings" min="0" max="100" value="60">
+               </div>
+           </div>
+           
+           <!-- Statistics -->
+           <div class="control-section">
+               <h3>📈 Statistics</h3>
+               <div class="stat-row">
+                   <span class="stat-label">Study Area:</span>
+                   <span class="stat-value">~3,149 km²</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">High Risk:</span>
+                   <span class="stat-value high">21.5% (843 km²)</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">Medium Risk:</span>
+                   <span class="stat-value medium">39.4% (1,239 km²)</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">Low Risk:</span>
+                   <span class="stat-value low">39.1% (1,229 km²)</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">Model AUC:</span>
+                   <span class="stat-value">0.767</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">Factors Used:</span>
+                   <span class="stat-value">7</span>
+               </div>
+           </div>
+           
+           <!-- Legend -->
+           <div class="control-section">
+               <h3>🔖 Legend</h3>
+               <div class="legend">
+                   <div class="legend-title">Risk Classification</div>
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #e01b24;"></div>
+                       High Risk (0.6-1.0)
+                   </div>
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #e68835;"></div>
+                       Medium Risk (0.3-0.6)
+                   </div>
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #22c55e;"></div>
+                       Low Risk (0.0-0.3)
+                   </div>
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #8b5cf6;"></div>
+                       Building Footprints
+                   </div>
+               </div>
+           </div>
+       </div>
+   </div>
+   
+   <!-- Leaflet JS -->
+   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+   
+   <script>
+       // Initialize map
+       const map = L.map('map', {
+           center: [26.8338, 88.4345],
+           zoom: 10,
+           zoomControl: true,
+           preferCanvas: true
+       });
+       
+       // Basemaps
+       const basemaps = {
+           osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+               attribution: '© OpenStreetMap contributors',
+               maxZoom: 18
+           }),
+           satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+               attribution: '© Esri',
+               maxZoom: 18
+           }),
+           topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+               attribution: '© OpenTopoMap',
+               maxZoom: 17
+           })
+       };
+       
+       basemaps.osm.addTo(map);
+       
+       // ⚠️ REPLACE WITH YOUR GITHUB USERNAME
+       const GITHUB_USERNAME = 'y-asir007';
+       const REPO_NAME = 'darjeeling-landslide-data';
+       
+       // Data URLs
+       const dataUrls = {
+           susceptibility: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/susceptibility.png',
+           risk: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/risk_classes.geojson',
+           buildings: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/bf_darjiling1.geojson'
+       };
+       
+       // Layer variables
+       let susceptibilityLayer, riskLayer, buildingsLayer;
+       let layersLoaded = 0;
+       const totalLayers = 3;
+       
+       // Loading tracker
+       function checkLoading() {
+           layersLoaded++;
+           if (layersLoaded === totalLayers) {
+               document.getElementById('loading').style.display = 'none';
+               console.log('✅ All layers loaded successfully');
+           }
+       }
+       
+       // 1. SUSCEPTIBILITY IMAGE (EXACT BOUNDS FROM RASTER)
+       // CRS: WGS84 (EPSG:4326)
+       const bounds = [
+           [26.44635165, 87.99003317],  // Southwest [lat, lon]
+           [27.22114859, 88.87909580]   // Northeast [lat, lon]
+       ];
+       
+       susceptibilityLayer = L.imageOverlay(dataUrls.susceptibility, bounds, {
+           opacity: 0.7,
+           interactive: false,
+           attribution: 'Landslide Susceptibility Model'
+       }).addTo(map);
+       
+       susceptibilityLayer.on('load', function() {
+           console.log('✅ Susceptibility PNG loaded');
+           checkLoading();
+       });
+       
+       susceptibilityLayer.on('error', function() {
+           console.error('❌ Susceptibility PNG failed to load');
+           checkLoading();
+       });
+       
+       // 2. RISK CLASSES (GeoJSON)
+       console.log('Loading risk classes...');
+       fetch(dataUrls.risk)
+           .then(response => {
+               if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+               return response.json();
+           })
+           .then(data => {
+               console.log('✅ Risk GeoJSON fetched:', data.features.length, 'features');
+               
+               riskLayer = L.geoJSON(data, {
+                   style: function(feature) {
+                       const riskClass = feature.properties.DN || feature.properties.risk_class || 1;
+                       let color;
+                       if (riskClass == 3) color = '#e01b24';
+                       else if (riskClass == 2) color = '#e68835';
+                       else color = '#22c55e';
+                       
+                       return {
+                           fillColor: color,
+                           weight: 1,
+                           opacity: 0.5,
+                           color: '#333',
+                           fillOpacity: 0.5
+                       };
+                   },
+                   onEachFeature: function(feature, layer) {
+                       const props = feature.properties;
+                       const riskClass = props.DN || props.risk_class || 1;
+                       const riskZone = riskClass == 3 ? 'HIGH RISK' : 
+                                       riskClass == 2 ? 'MEDIUM RISK' : 'LOW RISK';
+                       const color = riskClass == 3 ? '#e01b24' : 
+                                    riskClass == 2 ? '#e68835' : '#22c55e';
+                       
+                       layer.bindPopup(`
+                           <div style="font-family: Arial; min-width: 200px;">
+                               <b style="font-size: 14px;">Risk Zone Summary</b><br><br>
+                               <b>Zone:</b> <span style="color: ${color}; font-weight: bold;">${riskZone}</span><br>
+                               <b>Area:</b> ${props.area_km2 ? props.area_km2.toFixed(2) + ' km²' : 'Calculating...'}<br>
+                               <b>Coverage:</b> ${props.percentage ? props.percentage.toFixed(1) + '%' : 'N/A'}
+                           </div>
+                       `);
+                   }
+               }).addTo(map);
+               
+               checkLoading();
+           })
+           .catch(error => {
+               console.error('❌ Risk classes error:', error);
+               document.getElementById('loading').innerHTML = 'Error loading risk zones. Check console (F12).';
+           });
+       
+       // 3. BUILDINGS (GeoJSON)
+       console.log('Loading buildings...');
+       fetch(dataUrls.buildings)
+           .then(response => {
+               if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+               return response.json();
+           })
+           .then(data => {
+               console.log('✅ Buildings GeoJSON fetched:', data.features.length, 'features');
+               
+               buildingsLayer = L.geoJSON(data, {
+                   style: {
+                       fillColor: '#8b5cf6',
+                       weight: 0.5,
+                       opacity: 0.6,
+                       color: '#6d28d9',
+                       fillOpacity: 0.6
+                   },
+                   onEachFeature: function(feature, layer) {
+                       layer.bindPopup(`
+                           <div style="font-family: Arial;">
+                               <b>Building Footprint</b><br>
+                               <small>Click risk zones for exposure analysis</small>
+                           </div>
+                       `);
+                   }
+               }).addTo(map);
+               
+               checkLoading();
+           })
+           .catch(error => {
+               console.error('❌ Buildings error:', error);
+               checkLoading();
+           });
+       
+       // Basemap switcher
+       document.querySelectorAll('input[name="basemap"]').forEach(radio => {
+           radio.addEventListener('change', function() {
+               Object.values(basemaps).forEach(layer => map.removeLayer(layer));
+               basemaps[this.value].addTo(map);
+               map.invalidateSize();
+           });
+       });
+       
+       // Layer toggles
+       document.getElementById('toggle-susceptibility').addEventListener('change', function() {
+           this.checked ? map.addLayer(susceptibilityLayer) : map.removeLayer(susceptibilityLayer);
+       });
+       
+       document.getElementById('toggle-risk').addEventListener('change', function() {
+           if (riskLayer) {
+               this.checked ? map.addLayer(riskLayer) : map.removeLayer(riskLayer);
+           }
+       });
+       
+       document.getElementById('toggle-buildings').addEventListener('change', function() {
+           if (buildingsLayer) {
+               this.checked ? map.addLayer(buildingsLayer) : map.removeLayer(buildingsLayer);
+           }
+       });
+       
+       // Opacity controls
+       document.getElementById('opacity-susceptibility').addEventListener('input', function() {
+           susceptibilityLayer.setOpacity(this.value / 100);
+           document.getElementById('opacity-susc-value').textContent = this.value + '%';
+       });
+       
+       document.getElementById('opacity-risk').addEventListener('input', function() {
+           if (riskLayer) {
+               const opacity = this.value / 100;
+               riskLayer.setStyle({fillOpacity: opacity, opacity: opacity * 0.8});
+           }
+           document.getElementById('opacity-risk-value').textContent = this.value + '%';
+       });
+       
+       document.getElementById('opacity-buildings').addEventListener('input', function() {
+           if (buildingsLayer) {
+               const opacity = this.value / 100;
+               buildingsLayer.setStyle({fillOpacity: opacity, opacity: opacity * 0.8});
+           }
+           document.getElementById('opacity-build-value').textContent = this.value + '%';
+       });
+       
+       // Fit bounds to susceptibility extent
+       map.fitBounds(bounds);
+       
+       // Debug info
+       console.log('Map initialized at:', map.getCenter());
+       console.log('Susceptibility bounds:', bounds);
+       console.log('Data URLs:', dataUrls);
+   </script>
+</body>
+</html>
