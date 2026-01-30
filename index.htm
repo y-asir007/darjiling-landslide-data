@@ -50,6 +50,7 @@
         #map {
             flex: 1;
             height: 100%;
+            position: relative;
         }
         
         /* Sidebar */
@@ -140,6 +141,15 @@
             border-radius: 50%;
         }
         
+        .opacity-control input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #32b8c6;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        
         .opacity-value {
             float: right;
             font-weight: 600;
@@ -177,16 +187,17 @@
         
         /* Legend */
         .legend {
-            background: white;
+            background: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
         }
         
         .legend-title {
             font-weight: 600;
             margin-bottom: 10px;
             font-size: 14px;
+            color: #1a5490;
         }
         
         .legend-item {
@@ -202,6 +213,23 @@
             margin-right: 10px;
             border: 1px solid #ccc;
             border-radius: 3px;
+            flex-shrink: 0;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 16px;
+            color: #1a5490;
+            z-index: 9999;
+            font-weight: 500;
         }
         
         /* Responsive */
@@ -212,28 +240,22 @@
             #sidebar {
                 width: 100%;
                 height: 40vh;
+                order: 2;
             }
             #map {
                 height: 60vh;
+                order: 1;
             }
-        }
-        
-        /* Loading spinner */
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 18px;
-            color: #1a5490;
-            z-index: 9999;
+            #header h1 {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
     <div id="header">
-        <h1>Darjeeling Landslide Susceptibility & Building Exposure</h1>
+        <h1>Darjeeling Landslide Susceptibility & Building Exposure Analysis</h1>
         <p>Interactive Web Map | Logistic Regression Model (AUC: 0.767)</p>
     </div>
     
@@ -241,7 +263,7 @@
     <div id="container">
         <!-- Map -->
         <div id="map">
-            <div class="loading" id="loading">Loading map data...</div>
+            <div class="loading" id="loading">🗺️ Loading map data...</div>
         </div>
         
         <!-- Sidebar -->
@@ -321,23 +343,19 @@
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">High Risk:</span>
-                    <span class="stat-value high">21.5% (843 km²)</span>
+                    <span class="stat-value high">21.5%</span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">Medium Risk:</span>
-                    <span class="stat-value medium">39.4% (1,239 km²)</span>
+                    <span class="stat-value medium">39.4%</span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">Low Risk:</span>
-                    <span class="stat-value low">39.1% (1,229 km²)</span>
+                    <span class="stat-value low">39.1%</span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">Model AUC:</span>
                     <span class="stat-value">0.767</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Factors Used:</span>
-                    <span class="stat-value">7</span>
                 </div>
             </div>
             
@@ -348,19 +366,19 @@
                     <div class="legend-title">Risk Classification</div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #e01b24;"></div>
-                        High Risk (0.6-1.0)
+                        <span>High Risk (0.6-1.0)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #e68835;"></div>
-                        Medium Risk (0.3-0.6)
+                        <span>Medium Risk (0.3-0.6)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #22c55e;"></div>
-                        Low Risk (0.0-0.3)
+                        <span>Low Risk (0.0-0.3)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #8b5cf6;"></div>
-                        Building Footprints
+                        <span>Building Footprints</span>
                     </div>
                 </div>
             </div>
@@ -371,17 +389,22 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // Initialize map
+        console.log('🚀 Initializing Darjeeling Landslide Map...');
+        
+        // Initialize map with better defaults
         const map = L.map('map', {
-            center: [26.8338, 88.4345],  // Center of Darjeeling
+            center: [26.8338, 88.4345],
             zoom: 10,
-            zoomControl: true
+            zoomControl: true,
+            preferCanvas: true,
+            maxZoom: 18,
+            minZoom: 8
         });
         
         // Basemaps
         const basemaps = {
             osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
+                attribution: '© OpenStreetMap',
                 maxZoom: 18
             }),
             satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -396,32 +419,78 @@
         
         basemaps.osm.addTo(map);
         
-        // GitHub raw URLs (REPLACE WITH YOUR ACTUAL URLS)
+        // Data URLs - CORRECTED
         const dataUrls = {
             susceptibility: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/susceptibility.png',
             risk: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/risk_classes.geojson',
             buildings: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/bf_darjiling1.geojson'
         };
         
-        // Layers
+        // Layer variables
         let susceptibilityLayer, riskLayer, buildingsLayer;
+        let layersLoaded = 0;
+        const totalLayers = 3;
         
-        // 1. Susceptibility Image Overlay
-        const bounds = [[26.446, 87.990], [27.221, 88.879]];
+        // Loading tracker with better UI feedback
+        function updateLoading(message) {
+            document.getElementById('loading').textContent = message;
+        }
+        
+        function checkLoading() {
+            layersLoaded++;
+            console.log(`✅ Layers loaded: ${layersLoaded}/${totalLayers}`);
+            if (layersLoaded === totalLayers) {
+                document.getElementById('loading').style.display = 'none';
+                console.log('🎉 All layers loaded successfully!');
+            }
+        }
+        
+        // 1. SUSCEPTIBILITY IMAGE (EXACT BOUNDS)
+        console.log('Loading susceptibility PNG...');
+        const bounds = [
+            [26.44635165, 87.99003317],  // Southwest
+            [27.22114859, 88.87909580]   // Northeast
+        ];
+        
         susceptibilityLayer = L.imageOverlay(dataUrls.susceptibility, bounds, {
-            opacity: 0.7
+            opacity: 0.7,
+            interactive: false,
+            attribution: 'Landslide Susceptibility'
         }).addTo(map);
         
-        // 2. Risk Classes (GeoJSON)
+        susceptibilityLayer.on('load', function() {
+            console.log('✅ Susceptibility PNG loaded');
+            checkLoading();
+        });
+        
+        susceptibilityLayer.on('error', function() {
+            console.error('❌ Susceptibility PNG failed to load');
+            updateLoading('⚠️ Susceptibility layer failed. Check console.');
+        });
+        
+        // 2. RISK CLASSES (GeoJSON)
+        console.log('Loading risk classes GeoJSON...');
+        updateLoading('Loading risk zones...');
+        
         fetch(dataUrls.risk)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('✅ Risk classes loaded:', data.features ? data.features.length + ' features' : 'unknown count');
+                updateLoading('Rendering risk zones...');
+                
                 riskLayer = L.geoJSON(data, {
                     style: function(feature) {
-                        const riskClass = feature.properties.DN || feature.properties.risk_class;
+                        const props = feature.properties || {};
+                        const riskClass = props.DN || props.risk_class || props.gridcode || 1;
                         let color;
-                        if (riskClass == 3) color = '#e01b24';
-                        else if (riskClass == 2) color = '#e68835';
+                        
+                        if (riskClass == 3 || riskClass == 'High') color = '#e01b24';
+                        else if (riskClass == 2 || riskClass == 'Medium') color = '#e68835';
                         else color = '#22c55e';
                         
                         return {
@@ -433,42 +502,74 @@
                         };
                     },
                     onEachFeature: function(feature, layer) {
-                        const props = feature.properties;
-                        const riskClass = props.DN || props.risk_class;
-                        const riskZone = riskClass == 3 ? 'HIGH RISK' : 
-                                        riskClass == 2 ? 'MEDIUM RISK' : 'LOW RISK';
+                        const props = feature.properties || {};
+                        const riskClass = props.DN || props.risk_class || props.gridcode || 1;
+                        
+                        let riskZone, color;
+                        if (riskClass == 3 || riskClass == 'High') {
+                            riskZone = 'HIGH RISK';
+                            color = '#e01b24';
+                        } else if (riskClass == 2 || riskClass == 'Medium') {
+                            riskZone = 'MEDIUM RISK';
+                            color = '#e68835';
+                        } else {
+                            riskZone = 'LOW RISK';
+                            color = '#22c55e';
+                        }
                         
                         layer.bindPopup(`
-                            <b>Risk Zone Summary</b><br>
-                            Zone: <b style="color: ${riskClass == 3 ? '#e01b24' : riskClass == 2 ? '#e68835' : '#22c55e'}">${riskZone}</b><br>
-                            Area: ${props.area_km2 ? props.area_km2.toFixed(2) + ' km²' : 'N/A'}<br>
-                            Percentage: ${props.percentage ? props.percentage.toFixed(1) + '%' : 'N/A'}
+                            <div style="font-family: Arial; min-width: 180px;">
+                                <b style="font-size: 15px;">Risk Zone</b><br><br>
+                                <b>Level:</b> <span style="color: ${color}; font-weight: bold;">${riskZone}</span><br>
+                                <b>Area:</b> ${props.area_km2 ? props.area_km2.toFixed(2) + ' km²' : 'N/A'}<br>
+                                <b>Coverage:</b> ${props.percentage ? props.percentage.toFixed(1) + '%' : 'N/A'}
+                            </div>
                         `);
                     }
                 }).addTo(map);
                 
-                document.getElementById('loading').style.display = 'none';
+                checkLoading();
+            })
+            .catch(error => {
+                console.error('❌ Risk classes error:', error);
+                updateLoading('⚠️ Risk zones failed: ' + error.message);
+                checkLoading(); // Continue despite error
             });
         
-        // 3. Buildings (GeoJSON)
+        // 3. BUILDINGS (GeoJSON)
+        console.log('Loading buildings GeoJSON...');
+        updateLoading('Loading buildings...');
+        
         fetch(dataUrls.buildings)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('✅ Buildings loaded:', data.features ? data.features.length + ' features' : 'unknown count');
+                updateLoading('Rendering buildings...');
+                
                 buildingsLayer = L.geoJSON(data, {
                     style: {
                         fillColor: '#8b5cf6',
                         weight: 0.5,
                         opacity: 0.6,
-                        color: '#8b5cf6',
+                        color: '#6d28d9',
                         fillOpacity: 0.6
                     },
                     onEachFeature: function(feature, layer) {
-                        layer.bindPopup(`
-                            <b>Building Footprint</b><br>
-                            Click risk zones for exposure info
-                        `);
+                        layer.bindPopup('<b>Building Footprint</b><br><small>Click risk zones for context</small>');
                     }
                 }).addTo(map);
+                
+                checkLoading();
+            })
+            .catch(error => {
+                console.error('❌ Buildings error:', error);
+                updateLoading('⚠️ Buildings failed: ' + error.message);
+                checkLoading(); // Continue despite error
             });
         
         // Basemap switcher
@@ -476,44 +577,61 @@
             radio.addEventListener('change', function() {
                 Object.values(basemaps).forEach(layer => map.removeLayer(layer));
                 basemaps[this.value].addTo(map);
+                map.invalidateSize();
             });
         });
         
         // Layer toggles
         document.getElementById('toggle-susceptibility').addEventListener('change', function() {
-            this.checked ? map.addLayer(susceptibilityLayer) : map.removeLayer(susceptibilityLayer);
+            if (susceptibilityLayer) {
+                this.checked ? map.addLayer(susceptibilityLayer) : map.removeLayer(susceptibilityLayer);
+            }
         });
         
         document.getElementById('toggle-risk').addEventListener('change', function() {
-            this.checked ? map.addLayer(riskLayer) : map.removeLayer(riskLayer);
+            if (riskLayer) {
+                this.checked ? map.addLayer(riskLayer) : map.removeLayer(riskLayer);
+            }
         });
         
         document.getElementById('toggle-buildings').addEventListener('change', function() {
-            this.checked ? map.addLayer(buildingsLayer) : map.removeLayer(buildingsLayer);
+            if (buildingsLayer) {
+                this.checked ? map.addLayer(buildingsLayer) : map.removeLayer(buildingsLayer);
+            }
         });
         
         // Opacity controls
         document.getElementById('opacity-susceptibility').addEventListener('input', function() {
-            susceptibilityLayer.setOpacity(this.value / 100);
+            if (susceptibilityLayer) {
+                susceptibilityLayer.setOpacity(this.value / 100);
+            }
             document.getElementById('opacity-susc-value').textContent = this.value + '%';
         });
         
         document.getElementById('opacity-risk').addEventListener('input', function() {
             if (riskLayer) {
-                riskLayer.setStyle({fillOpacity: this.value / 100, opacity: this.value / 100});
+                const opacity = this.value / 100;
+                riskLayer.setStyle({fillOpacity: opacity, opacity: opacity * 0.8});
             }
             document.getElementById('opacity-risk-value').textContent = this.value + '%';
         });
         
         document.getElementById('opacity-buildings').addEventListener('input', function() {
             if (buildingsLayer) {
-                buildingsLayer.setStyle({fillOpacity: this.value / 100, opacity: this.value / 100});
+                const opacity = this.value / 100;
+                buildingsLayer.setStyle({fillOpacity: opacity, opacity: opacity * 0.8});
             }
             document.getElementById('opacity-build-value').textContent = this.value + '%';
         });
         
-        // Fit bounds to data
+        // Fit bounds to susceptibility extent
         map.fitBounds(bounds);
+        
+        // Debug info
+        console.log('Map center:', map.getCenter());
+        console.log('Zoom level:', map.getZoom());
+        console.log('Susceptibility bounds:', bounds);
+        console.log('Data URLs:', dataUrls);
     </script>
 </body>
 </html>
