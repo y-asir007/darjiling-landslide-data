@@ -17,11 +17,10 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
         }
 
-        /* Header */
         #header {
             position: fixed;
             top: 0;
@@ -43,10 +42,8 @@
         #header p {
             font-size: 13px;
             opacity: 0.9;
-            font-weight: 300;
         }
 
-        /* Map Container */
         #map {
             position: absolute;
             top: 70px;
@@ -55,7 +52,6 @@
             right: 0;
         }
 
-        /* Layer Controls */
         .layer-controls {
             position: absolute;
             top: 85px;
@@ -65,7 +61,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             padding: 12px;
             z-index: 999;
-            min-width: 180px;
+            min-width: 200px;
         }
 
         .layer-controls h3 {
@@ -94,18 +90,31 @@
         .layer-toggle input[type="checkbox"] {
             margin-right: 8px;
             cursor: pointer;
-            width: 16px;
-            height: 16px;
         }
 
         .layer-toggle label {
             font-size: 13px;
             color: #555;
             cursor: pointer;
-            user-select: none;
         }
 
-        /* Legend */
+        .opacity-control {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .opacity-control label {
+            font-size: 12px;
+            color: #666;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .opacity-control input[type="range"] {
+            width: 100%;
+        }
+
         .legend {
             position: absolute;
             bottom: 30px;
@@ -146,7 +155,6 @@
             color: #555;
         }
 
-        /* Popup Styling */
         .mapboxgl-popup-content {
             padding: 16px;
             border-radius: 8px;
@@ -186,7 +194,6 @@
             margin: 8px 0;
         }
 
-        /* Loading Indicator */
         #loading {
             position: absolute;
             top: 50%;
@@ -219,33 +226,27 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Mobile Responsive */
         @media (max-width: 768px) {
-            #header h1 {
-                font-size: 18px;
-            }
-            #header p {
-                font-size: 11px;
-            }
-            .layer-controls, .legend {
-                font-size: 11px;
-            }
+            #header h1 { font-size: 18px; }
+            #header p { font-size: 11px; }
+            .layer-controls, .legend { font-size: 11px; }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div id="header">
         <h1>Darjiling Landslide Risk Assessment Map</h1>
-        <p>Interactive visualization of landslide susceptibility zones and building footprints</p>
+        <p>Interactive visualization of susceptibility zones, risk classes, and building footprints</p>
     </div>
 
-    <!-- Map Container -->
     <div id="map"></div>
 
-    <!-- Layer Controls -->
     <div class="layer-controls">
         <h3>Map Layers</h3>
+        <div class="layer-toggle">
+            <input type="checkbox" id="toggle-susceptibility" checked>
+            <label for="toggle-susceptibility">Susceptibility Raster</label>
+        </div>
         <div class="layer-toggle">
             <input type="checkbox" id="toggle-risk" checked>
             <label for="toggle-risk">Risk Zones</label>
@@ -254,9 +255,13 @@
             <input type="checkbox" id="toggle-buildings" checked>
             <label for="toggle-buildings">Buildings</label>
         </div>
+        
+        <div class="opacity-control">
+            <label for="susceptibility-opacity">Susceptibility Opacity: <span id="opacity-value">70%</span></label>
+            <input type="range" id="susceptibility-opacity" min="0" max="100" value="70">
+        </div>
     </div>
 
-    <!-- Legend -->
     <div class="legend">
         <h3>Risk Level</h3>
         <div class="legend-item">
@@ -281,15 +286,13 @@
         </div>
     </div>
 
-    <!-- Loading Indicator -->
     <div id="loading" class="active">
         <div class="loader"></div>
         <div style="text-align: center; color: #555; font-size: 14px;">Loading map...</div>
     </div>
 
     <script>
-        // Initialize map
-        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw'; // Public token
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
         
         const map = new mapboxgl.Map({
             container: 'map',
@@ -297,15 +300,12 @@
             center: [88.36, 26.91],
             zoom: 11,
             pitch: 0,
-            bearing: 0,
-            attributionControl: true
+            bearing: 0
         });
 
-        // Add navigation controls
         map.addControl(new mapboxgl.NavigationControl(), 'top-left');
         map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
 
-        // Risk level colors and names
         const riskColors = {
             5: { color: '#d73027', name: 'Very High Risk' },
             4: { color: '#fc8d59', name: 'High Risk' },
@@ -314,27 +314,44 @@
             1: { color: '#1a9850', name: 'Very Low Risk' }
         };
 
-        // When map loads
         map.on('load', () => {
-            // Hide loading indicator
             document.getElementById('loading').classList.remove('active');
 
-            // Add Risk Zones Source
-            map.addSource('risk-source', {
-                type: 'vector',
-                tiles: [
-                    'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/risk_tiles/{z}/{x}/{y}.pbf'
-                ],
-                minzoom: 8,
-                maxzoom: 12
+            // Add Susceptibility Raster Image
+            map.addSource('susceptibility-source', {
+                type: 'image',
+                url: 'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/susceptibility.png',
+                coordinates: [
+                    [87.99, 27.22],  // top-left [longitude, latitude]
+                    [88.88, 27.22],  // top-right
+                    [88.88, 26.45],  // bottom-right
+                    [87.99, 26.45]   // bottom-left
+                ]
+                // ⚠️ ADJUST THESE COORDINATES to match your actual extent!
             });
 
-            // Add Risk Zones Fill Layer
+            map.addLayer({
+                id: 'susceptibility-layer',
+                type: 'raster',
+                source: 'susceptibility-source',
+                paint: {
+                    'raster-opacity': 0.7
+                }
+            });
+
+            // Add Risk Zones
+            map.addSource('risk-source', {
+                type: 'vector',
+                tiles: ['https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/risk_classes/{z}/{x}/{y}.pbf'],
+                minzoom: 10,
+                maxzoom: 14
+            });
+
             map.addLayer({
                 id: 'risk-fill',
                 type: 'fill',
                 source: 'risk-source',
-                'source-layer': 'risk_classes',
+                'source-layer': 'risk_classes',  // ⚠️ CHECK THIS NAME!
                 paint: {
                     'fill-color': [
                         'match',
@@ -350,7 +367,6 @@
                 }
             });
 
-            // Add Risk Zones Outline Layer
             map.addLayer({
                 id: 'risk-outline',
                 type: 'line',
@@ -358,27 +374,23 @@
                 'source-layer': 'risk_classes',
                 paint: {
                     'line-color': '#ffffff',
-                    'line-width': 0.5,
-                    'line-opacity': 0.8
+                    'line-width': 0.5
                 }
             });
 
-            // Add Buildings Source
+            // Add Buildings
             map.addSource('buildings-source', {
                 type: 'vector',
-                tiles: [
-                    'https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/building_tiles/{z}/{x}/{y}.pbf'
-                ],
+                tiles: ['https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/bf_simplified/{z}/{x}/{y}.pbf'],
                 minzoom: 12,
                 maxzoom: 15
             });
 
-            // Add Buildings Layer (only visible at zoom 13+)
             map.addLayer({
                 id: 'buildings-fill',
                 type: 'fill',
                 source: 'buildings-source',
-                'source-layer': 'bf_simplified',
+                'source-layer': 'bf_simplified',  // ⚠️ CHECK THIS NAME!
                 minzoom: 13,
                 paint: {
                     'fill-color': '#4a90e2',
@@ -386,7 +398,6 @@
                 }
             });
 
-            // Add Buildings Outline Layer
             map.addLayer({
                 id: 'buildings-outline',
                 type: 'line',
@@ -399,12 +410,11 @@
                 }
             });
 
-            // Risk Zone Click Popup
+            // Event handlers
             map.on('click', 'risk-fill', (e) => {
                 const props = e.features[0].properties;
                 const gridcode = props.gridcode;
-                const riskInfo = riskColors[gridcode] || { color: '#cccccc', name: 'Unknown' };
-                
+                const riskInfo = riskColors[gridcode] || { color: '#ccc', name: 'Unknown' };
                 const area = props.Shape_Area ? (props.Shape_Area / 1000000).toFixed(2) : 'N/A';
                 
                 new mapboxgl.Popup()
@@ -423,7 +433,6 @@
                     .addTo(map);
             });
 
-            // Building Click Popup
             map.on('click', 'buildings-fill', (e) => {
                 const props = e.features[0].properties;
                 const area = props.area ? props.area.toFixed(2) : 'N/A';
@@ -431,9 +440,7 @@
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(`
-                        <div class="popup-title">
-                            Building Footprint
-                        </div>
+                        <div class="popup-title">Building Footprint</div>
                         <div class="popup-divider"></div>
                         <div class="popup-content">
                             <strong>Area:</strong> ${area} m²
@@ -442,39 +449,41 @@
                     .addTo(map);
             });
 
-            // Cursor changes
-            map.on('mouseenter', 'risk-fill', () => {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'risk-fill', () => {
-                map.getCanvas().style.cursor = '';
-            });
-            map.on('mouseenter', 'buildings-fill', () => {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'buildings-fill', () => {
-                map.getCanvas().style.cursor = '';
+            // Cursor styles
+            ['risk-fill', 'buildings-fill'].forEach(layer => {
+                map.on('mouseenter', layer, () => map.getCanvas().style.cursor = 'pointer');
+                map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
             });
 
-            // Layer toggle functionality
+            // Layer toggles
+            document.getElementById('toggle-susceptibility').addEventListener('change', (e) => {
+                map.setLayoutProperty('susceptibility-layer', 'visibility', e.target.checked ? 'visible' : 'none');
+            });
+
             document.getElementById('toggle-risk').addEventListener('change', (e) => {
-                const visibility = e.target.checked ? 'visible' : 'none';
-                map.setLayoutProperty('risk-fill', 'visibility', visibility);
-                map.setLayoutProperty('risk-outline', 'visibility', visibility);
+                const vis = e.target.checked ? 'visible' : 'none';
+                map.setLayoutProperty('risk-fill', 'visibility', vis);
+                map.setLayoutProperty('risk-outline', 'visibility', vis);
             });
 
             document.getElementById('toggle-buildings').addEventListener('change', (e) => {
-                const visibility = e.target.checked ? 'visible' : 'none';
-                map.setLayoutProperty('buildings-fill', 'visibility', visibility);
-                map.setLayoutProperty('buildings-outline', 'visibility', visibility);
+                const vis = e.target.checked ? 'visible' : 'none';
+                map.setLayoutProperty('buildings-fill', 'visibility', vis);
+                map.setLayoutProperty('buildings-outline', 'visibility', vis);
+            });
+
+            // Opacity slider
+            document.getElementById('susceptibility-opacity').addEventListener('input', (e) => {
+                const opacity = e.target.value / 100;
+                map.setPaintProperty('susceptibility-layer', 'raster-opacity', opacity);
+                document.getElementById('opacity-value').textContent = e.target.value + '%';
             });
         });
 
-        // Error handling
         map.on('error', (e) => {
             console.error('Map error:', e);
             document.getElementById('loading').innerHTML = 
-                '<div style="color: #d73027; text-align: center;">Error loading map. Please refresh.</div>';
+                '<div style="color: #d73027;">Error: ' + e.error.message + '</div>';
         });
     </script>
 </body>
