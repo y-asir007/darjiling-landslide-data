@@ -342,7 +342,7 @@
             // Add Risk Zones
             map.addSource('risk-source', {
                 type: 'vector',
-                tiles: ['https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/risk_classes/{z}/{x}/{y}.pbf'],
+                tiles: ['https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/risk_tiles/{z}/{x}/{y}.pbf'],
                 minzoom: 10,
                 maxzoom: 14
             });
@@ -381,7 +381,7 @@
             // Add Buildings
             map.addSource('buildings-source', {
                 type: 'vector',
-                tiles: ['https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/bf_simplified/{z}/{x}/{y}.pbf'],
+                tiles: ['https://raw.githubusercontent.com/y-asir007/darjiling-landslide-data/main/building_tiles/{z}/{x}/{y}.pbf'],
                 minzoom: 12,
                 maxzoom: 15
             });
