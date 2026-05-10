@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <header class="panel"><h1>Darjiling Landslide Web Map</h1><p>Place this index.html in the same GitHub folder as <strong>SettlementRiskClasses..kml</strong> and <strong>susceptibility.jpg</strong> so both overlays load correctly.</p></header>
+  <header class="panel"><h1>Darjiling Landslide Web Map</h1><p>Place this index.html in the same GitHub folder as <strong>SettlementRiskClasses.kml</strong> and <strong>susceptibility.png</strong> so both overlays load correctly.</p></header>
   <aside class="panel layers"><h2>Layers</h2><div class="item"><span class="swatch" style="background:#dbeafe"></span><span>OpenStreetMap / Satellite basemap</span></div><div class="item"><span class="swatch" style="background:linear-gradient(135deg,#22c55e,#facc15,#dc2626)"></span><span>Susceptibility raster overlay</span></div><div class="item"><span class="swatch" style="background:rgba(220,38,38,0.25); border-color:#dc2626"></span><span>KML settlement risk overlay</span></div><div class="note">All three files must stay in the same repository folder.</div></aside>
   <aside class="panel legend"><h2>Risk legend</h2><div class="item"><span class="swatch" style="background:var(--high)"></span><span>3 - High risk zone</span></div><div class="item"><span class="swatch" style="background:var(--moderate)"></span><span>2 - Moderate risk zone</span></div><div class="item"><span class="swatch" style="background:var(--low)"></span><span>1 - Low risk zone</span></div></aside>
   <div id="map"></div>
@@ -50,7 +50,7 @@
       console.error(err);
       map.fitBounds(overlayBounds,{padding:[20,20]});
       L.control.layers({'OpenStreetMap':osm,'Satellite':satellite},{'Susceptibility Raster':susceptibility},{collapsed:false}).addTo(map);
-      L.popup().setLatLng([26.83,88.35]).setContent('KML could not be loaded. Confirm SettlementRiskClasses..kml is in the same folder as index.html.').openOn(map);
+      L.popup().setLatLng([26.83,88.35]).setContent('KML could not be loaded. Confirm SettlementRiskClasses.kml is in the same folder as index.html.').openOn(map);
     });
   </script>
 </body>
