@@ -36,10 +36,10 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.0/dist/togeojson.umd.js"></script>
   <script>
     const map = L.map('map');
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles &copy; Esri'});
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; OpenStreetMap contributors'});
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles &copy; Esri'}).addTo(map);
     const overlayBounds = [[26.4515872795647, 88.0015852336498], [27.2085975694923, 88.8763646573254]];
-    const susceptibility = L.imageOverlay('./susceptibility.png', overlayBounds, {opacity:0.74}).addTo(map);
+    const susceptibility = L.imageOverlay('./susceptibility.png', overlayBounds, {opacity:0.74});
 
     function riskValue(p){
   const vals = [
