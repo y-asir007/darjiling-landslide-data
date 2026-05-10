@@ -74,7 +74,7 @@
         const kmlLayer = L.geoJSON(geojson, {
           style: f => {
             const v = riskValue(f.properties||{});
-            return {color:riskColor(v), weight:1.8, opacity:1, fillColor:riskColor(v), fillOpacity:100};
+            return {color:riskColor(v), weight:1.8, opacity:1, fillColor:riskColor(v), fillOpacity:0};
           },
           pointToLayer: (f, latlng) => {
             const v = riskValue(f.properties||{});
