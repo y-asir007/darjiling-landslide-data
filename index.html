@@ -42,10 +42,21 @@
     const susceptibility = L.imageOverlay('./susceptibility.png', overlayBounds, {opacity:0.74}).addTo(map);
 
     function riskValue(p){
-      const vals = [p.DN, p.dn, p._majority, p.majority];
-      for (const v of vals){ const n = Number(v); if ([1,2,3].includes(n)) return n; }
-      return 1;
-    }
+  const vals = [
+    p.COL5A517F6A81606F00,
+    p.COL5A517F6A8101AC03,
+    p.COL5A517F6A81FA2562,
+    p.DN,
+    p.dn,
+    p._majority,
+    p.majority
+  ];
+  for (const v of vals){
+    const n = Number(v);
+    if ([1,2,3].includes(n)) return n;
+  }
+  return 1;
+}
     function riskColor(v){ return v===3 ? '#e31a1c' : v===2 ? '#ffdf00' : '#33a02c'; }
     function formatProperties(properties){
       const rows = Object.entries(properties||{})
