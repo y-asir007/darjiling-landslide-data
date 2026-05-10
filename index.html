@@ -115,7 +115,7 @@
 
         L.control.layers(
           {'OpenStreetMap': osm, 'Satellite': satellite},
-          {'Susceptibility Raster': susceptibility, 'Settlement Risk KML': kmlLayer},
+          {'Susceptibility Raster': susceptibility, 'ment Risk KML': kmlLayer},
           {collapsed:false}
         ).addTo(map);
       });
@@ -134,5 +134,11 @@
       })
     );
   </script>
+
+  <div style="position:absolute;right:12px;top:12px;z-index:1200;background:rgba(255,255,255,0.95);padding:12px 14px;border:1px solid rgba(15,23,42,0.12);border-radius:14px;box-shadow:0 12px 32px rgba(2,6,23,0.16);font-family:Inter,sans-serif;min-width:220px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;">Susceptibility</div>
+    <div style="height:14px;border-radius:999px;background:linear-gradient(90deg,#33a02c 0%, #ffdf00 50%, #e31a1c 100%);border:1px solid rgba(0,0,0,.12);"></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#4b5563;margin-top:6px;"><span>0</span><span>0.5</span><span>1</span></div>
+  </div>
 </body>
 </html>
