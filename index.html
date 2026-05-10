@@ -16,58 +16,123 @@
     h1{margin:0 0 5px;font-size:1.15rem} header p,.note{margin:0;color:var(--muted);font-size:.93rem;line-height:1.45}.panel h2{margin:0 0 10px;font-size:.88rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
     .item{display:flex;align-items:center;gap:10px;font-size:.95rem;margin-bottom:10px}.item:last-child{margin-bottom:0}.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:0 0 18px}
     .leaflet-control-layers{border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
-    .debug{position:absolute;left:12px;right:12px;bottom:12px;z-index:1300;max-height:180px;overflow:auto;background:rgba(17,24,39,.92);color:#fff;padding:10px 12px;border-radius:12px;font-size:12px;white-space:pre-wrap;display:none}
+    .debug{display:none}
     @media (max-width:640px){header.panel,.layers,.legend{width:calc(100% - 24px)}.layers{top:146px}.legend{left:12px;right:12px;bottom:12px}}
   </style>
 </head>
 <body>
-  <header class="panel"><h1>Darjiling Landslide Web Map</h1><p>OpenStreetMap and satellite basemaps with susceptibility raster and KML risk overlay.</p></header>
-  <aside class="panel layers"><h2>Layers</h2><div class="item"><span class="swatch" style="background:#dbeafe"></span><span>OpenStreetMap / Satellite basemap</span></div><div class="item"><span class="swatch" style="background:linear-gradient(135deg,#22c55e,#facc15,#dc2626)"></span><span>Susceptibility raster overlay</span></div><div class="item"><span class="swatch" style="background:rgba(220,38,38,0.25); border-color:#dc2626"></span><span>KML settlement risk overlay</span></div><div class="note">Keep <strong>index.html</strong>, <strong>SettlementRiskClasses.kml</strong>, and <strong>susceptibility.jpg</strong> in the same folder.</div></aside>
-  <aside class="panel legend"><h2>Risk legend</h2><div class="item"><span class="swatch" style="background:var(--high)"></span><span>3 - High risk zone</span></div><div class="item"><span class="swatch" style="background:var(--moderate)"></span><span>2 - Moderate risk zone</span></div><div class="item"><span class="swatch" style="background:var(--low)"></span><span>1 - Low risk zone</span></div></aside>
   <div id="map"></div>
   <div id="debug" class="debug"></div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.0/dist/togeojson.umd.js"></script>
   <script>
     const debugBox = document.getElementById('debug');
-    const debug = (...args) => { console.log(...args); debugBox.style.display='block'; debugBox.textContent += args.map(a => typeof a === 'string' ? a : JSON.stringify(a, null, 2)).join(' ') + '\n'; };
+    const debug = (...args) => { console.log(...args); };
+
     const map = L.map('map');
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'}).addTo(map);
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Maxar, Earthstar Geographics, and the GIS User Community'});
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Maxar, Earthstar Geographics, and the GIS User Community'
+    });
+
     const overlayBounds = [[26.4515872795647, 88.0015852336498], [27.2085975694923, 88.8763646573254]];
     const susceptibility = L.imageOverlay('./susceptibility.png', overlayBounds, {opacity:0.74}).addTo(map);
 
-    function riskValue(p){ const vals=[p.DN,p.dn,p._majority,p.majority]; for(const v of vals){ const n=Number(v); if([1,2,3].includes(n)) return n; } return 1; }
-    function riskColor(v){ return v===3 ? '#dc2626' : v===2 ? '#facc15' : '#22c55e'; }
-    function formatProperties(properties){ const rows=Object.entries(properties||{}).filter(([k,v])=>v!==null&&v!==''&&v!==undefined).map(([k,v])=>`<div style="margin-bottom:6px;"><strong>${k}</strong>: ${v}</div>`).join(''); return rows || '<strong>No attributes available</strong>'; }
+    function riskValue(p){
+      const vals = [p.DN, p.dn, p._majority, p.majority];
+      for (const v of vals){
+        const n = Number(v);
+        if ([1,2,3].includes(n)) return n;
+      }
+      return 1;
+    }
+
+    function riskColor(v){
+      return v===3 ? '#e31a1c' : v===2 ? '#ffdf00' : '#33a02c';
+    }
+
+    function formatProperties(properties){
+      const rows = Object.entries(properties||{})
+        .filter(([k,v])=>v!==null&&v!==''&&v!==undefined)
+        .map(([k,v])=>`<div style="margin-bottom:6px;"><strong>${k}</strong>: ${v}</div>`)
+        .join('');
+      return rows || '<strong>No attributes available</strong>';
+    }
+
     function loadKml(filename){
       debug('Trying KML:', filename);
-      return fetch(`./${filename}`).then(r => { debug('HTTP status:', r.status); if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); }).then(kmlText => {
+      return fetch(`./${filename}`).then(r => {
+        debug('HTTP status:', r.status);
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      }).then(kmlText => {
         debug('KML length:', kmlText.length);
         const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
         if (kmlDoc.getElementsByTagName('parsererror').length) throw new Error('XML parser error');
+
         const geojson = (window.toGeoJSON || window.togeojson || togeojson).kml(kmlDoc);
         debug('GeoJSON features:', geojson.features ? geojson.features.length : 0);
         if (!geojson.features || !geojson.features.length) throw new Error('No features found in KML');
+
         const kmlLayer = L.geoJSON(geojson, {
-          style: f => { const v=riskValue(f.properties||{}); return {color:riskColor(v), weight:1.6, opacity:1, fillColor:riskColor(v), fillOpacity:0.48}; },
-          pointToLayer: (f, latlng) => { const v=riskValue(f.properties||{}); return L.circleMarker(latlng, {radius:6, color:'#111827', weight:1, fillColor:riskColor(v), fillOpacity:1}); },
-          onEachFeature: (f, layer) => { const v=riskValue(f.properties||{}); const label=v===3?'High risk zone':v===2?'Moderate risk zone':'Low risk zone'; layer.bindPopup(`<div><div style="margin-bottom:8px;"><strong>${label}</strong></div>${formatProperties(f.properties||{})}</div>`); }
+          style: f => {
+            const v = riskValue(f.properties||{});
+            return {
+              color: riskColor(v),
+              weight: 1.6,
+              opacity: 1,
+              fillColor: riskColor(v),
+              fillOpacity: 0.48
+            };
+          },
+          pointToLayer: (f, latlng) => {
+            const v = riskValue(f.properties||{});
+            return L.circleMarker(latlng, {
+              radius: 6,
+              color: '#111827',
+              weight: 1,
+              fillColor: riskColor(v),
+              fillOpacity: 1
+            });
+          },
+          onEachFeature: (f, layer) => {
+            const v = riskValue(f.properties||{});
+            const label = v===3 ? '3 - High risk zone' : v===2 ? '2 - Moderate risk zone' : '1 - Low risk zone';
+            layer.bindPopup(`<div><div style="margin-bottom:8px;"><strong>${label}</strong></div>${formatProperties(f.properties||{})}</div>`);
+          }
         }).addTo(map);
+
         const bounds = kmlLayer.getBounds();
         debug('Bounds valid:', bounds.isValid());
-        if (bounds.isValid()) map.fitBounds(bounds, {padding:[20,20]}); else map.fitBounds(overlayBounds, {padding:[20,20]});
-        L.control.layers({'OpenStreetMap':osm,'Satellite':satellite},{'Susceptibility Raster':susceptibility,'Settlement Risk KML':kmlLayer},{collapsed:false}).addTo(map);
+        if (bounds.isValid()) map.fitBounds(bounds, {padding:[20,20]});
+        else map.fitBounds(overlayBounds, {padding:[20,20]});
+
+        L.control.layers(
+          {'OpenStreetMap': osm, 'Satellite': satellite},
+          {'Susceptibility Raster': susceptibility, 'Settlement Risk KML': kmlLayer},
+          {collapsed:false}
+        ).addTo(map);
       });
     }
 
-    loadKml('SettlementRiskClasses.kml').catch(() => loadKml('SettlementRiskClasses.kml').catch(err => {
-      debug('All KML attempts failed');
-      debug(err.message || err);
-      map.fitBounds(overlayBounds, {padding:[20,20]});
-      L.control.layers({'OpenStreetMap':osm,'Satellite':satellite},{'Susceptibility Raster':susceptibility},{collapsed:false}).addTo(map);
-      L.popup().setLatLng([26.83,88.35]).setContent('KML could not be loaded. Check filename and console debug.').openOn(map);
-    }));
+    loadKml('SettlementRiskClasses.kml').catch(() =>
+      loadKml('SettlementRiskClasses.kml').catch(err => {
+        debug('All KML attempts failed');
+        debug(err.message || err);
+        map.fitBounds(overlayBounds, {padding:[20,20]});
+        L.control.layers(
+          {'OpenStreetMap': osm, 'Satellite': satellite},
+          {'Susceptibility Raster': susceptibility},
+          {collapsed:false}
+        ).addTo(map);
+      })
+    );
   </script>
 </body>
 </html>
