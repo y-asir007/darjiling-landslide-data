@@ -9,54 +9,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <style>
-    :root { --high:#dc2626; --moderate:#facc15; --low:#22c55e; --panel:rgba(255,255,255,0.96); --text:#1f2937; --muted:#6b7280; --border:rgba(15,23,42,0.12); --shadow:0 12px 32px rgba(2,6,23,0.16); --radius:14px; }
+    :root { --high:#e31a1c; --moderate:#ffdf00; --low:#33a02c; --panel:rgba(255,255,255,0.96); --text:#1f2937; --muted:#6b7280; --border:rgba(15,23,42,0.12); --shadow:0 12px 32px rgba(2,6,23,0.16); --radius:14px; }
     *{box-sizing:border-box} html,body,#map{height:100%;margin:0} body{font-family:'Inter',sans-serif;color:var(--text)}
-    .panel{position:absolute;z-index:1200;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-    header.panel{top:12px;left:12px;width:min(440px,calc(100% - 24px));padding:16px 18px}.layers{top:128px;left:12px;width:min(340px,calc(100% - 24px));padding:14px 16px}.legend{right:12px;bottom:24px;width:min(260px,calc(100% - 24px));padding:14px 16px}
-    h1{margin:0 0 5px;font-size:1.15rem} header p,.note{margin:0;color:var(--muted);font-size:.93rem;line-height:1.45}.panel h2{margin:0 0 10px;font-size:.88rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-    .item{display:flex;align-items:center;gap:10px;font-size:.95rem;margin-bottom:10px}.item:last-child{margin-bottom:0}.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:0 0 18px}
-    .leaflet-control-layers{border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
-    .debug{display:none}
-    @media (max-width:640px){header.panel,.layers,.legend{width:calc(100% - 24px)}.layers{top:146px}.legend{left:12px;right:12px;bottom:12px}}
+    .legendbox{position:absolute;left:12px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;z-index:1200;min-width:240px}
+    .risk{bottom:130px}.susc{bottom:12px}
+    .title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:14px}
+    .sw{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:0 0 18px}
+    @media (max-width:640px){.legendbox{width:calc(100% - 24px);min-width:0}.risk{bottom:126px}.susc{bottom:12px}}
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="debug" class="debug"></div>
-
+  <div class="legendbox risk">
+    <div class="title">Risk legend</div>
+    <div class="row"><span class="sw" style="background:#e31a1c"></span><span>3 - High risk zone</span></div>
+    <div class="row"><span class="sw" style="background:#ffdf00"></span><span>2 - Moderate risk zone</span></div>
+    <div class="row"><span class="sw" style="background:#33a02c"></span><span>1 - Low risk zone</span></div>
+  </div>
+  <div class="legendbox susc">
+    <div class="title">Susceptibility</div>
+    <div style="height:14px;border-radius:999px;background:linear-gradient(90deg,#33a02c 0%, #ffdf00 50%, #e31a1c 100%);border:1px solid rgba(0,0,0,.12);"></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#4b5563;margin-top:6px;"><span>0</span><span>0.5</span><span>1</span></div>
+  </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.0/dist/togeojson.umd.js"></script>
   <script>
-    const debugBox = document.getElementById('debug');
-    const debug = (...args) => { console.log(...args); };
-
     const map = L.map('map');
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Maxar, Earthstar Geographics, and the GIS User Community'
-    });
-
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles &copy; Esri'});
     const overlayBounds = [[26.4515872795647, 88.0015852336498], [27.2085975694923, 88.8763646573254]];
     const susceptibility = L.imageOverlay('./susceptibility.png', overlayBounds, {opacity:0.74}).addTo(map);
 
     function riskValue(p){
       const vals = [p.DN, p.dn, p._majority, p.majority];
-      for (const v of vals){
-        const n = Number(v);
-        if ([1,2,3].includes(n)) return n;
-      }
+      for (const v of vals){ const n = Number(v); if ([1,2,3].includes(n)) return n; }
       return 1;
     }
-
-    function riskColor(v){
-      return v===3 ? '#e31a1c' : v===2 ? '#ffdf00' : '#33a02c';
-    }
-
+    function riskColor(v){ return v===3 ? '#e31a1c' : v===2 ? '#ffdf00' : '#33a02c'; }
     function formatProperties(properties){
       const rows = Object.entries(properties||{})
         .filter(([k,v])=>v!==null&&v!==''&&v!==undefined)
@@ -66,40 +56,18 @@
     }
 
     function loadKml(filename){
-      debug('Trying KML:', filename);
-      return fetch(`./${filename}`).then(r => {
-        debug('HTTP status:', r.status);
-        if(!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.text();
-      }).then(kmlText => {
-        debug('KML length:', kmlText.length);
+      return fetch(`./${filename}`).then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); }).then(kmlText => {
         const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
         if (kmlDoc.getElementsByTagName('parsererror').length) throw new Error('XML parser error');
-
         const geojson = (window.toGeoJSON || window.togeojson || togeojson).kml(kmlDoc);
-        debug('GeoJSON features:', geojson.features ? geojson.features.length : 0);
-        if (!geojson.features || !geojson.features.length) throw new Error('No features found in KML');
-
         const kmlLayer = L.geoJSON(geojson, {
           style: f => {
             const v = riskValue(f.properties||{});
-            return {
-              color: riskColor(v),
-              weight: 1.6,
-              opacity: 1,
-              fillColor: riskColor(v),
-              fillOpacity: 0.48
-            };
+            return {color:riskColor(v), weight:1.8, opacity:1, fillColor:riskColor(v), fillOpacity:0.72};
           },
           pointToLayer: (f, latlng) => {
             const v = riskValue(f.properties||{});
-            return L.circleMarker(latlng, {
-              radius: 6,
-              color: '#111827',
-              weight: 1,
-              fillColor: riskColor(v),
-              fillOpacity: 1
-            });
+            return L.circleMarker(latlng, {radius:6, color:'#111827', weight:1, fillColor:riskColor(v), fillOpacity:1});
           },
           onEachFeature: (f, layer) => {
             const v = riskValue(f.properties||{});
@@ -107,38 +75,16 @@
             layer.bindPopup(`<div><div style="margin-bottom:8px;"><strong>${label}</strong></div>${formatProperties(f.properties||{})}</div>`);
           }
         }).addTo(map);
-
         const bounds = kmlLayer.getBounds();
-        debug('Bounds valid:', bounds.isValid());
-        if (bounds.isValid()) map.fitBounds(bounds, {padding:[20,20]});
-        else map.fitBounds(overlayBounds, {padding:[20,20]});
-
-        L.control.layers(
-          {'OpenStreetMap': osm, 'Satellite': satellite},
-          {'Susceptibility Raster': susceptibility, 'Settlement Risk KML': kmlLayer},
-          {collapsed:false}
-        ).addTo(map);
+        if (bounds.isValid()) map.fitBounds(bounds, {padding:[20,20]}); else map.fitBounds(overlayBounds, {padding:[20,20]});
+        L.control.layers({'OpenStreetMap':osm,'Satellite':satellite},{'Susceptibility Raster':susceptibility,'Settlement Risk KML':kmlLayer},{collapsed:false}).addTo(map);
       });
     }
 
-    loadKml('SettlementRiskClasses.kml').catch(() =>
-      loadKml('SettlementRiskClasses.kml').catch(err => {
-        debug('All KML attempts failed');
-        debug(err.message || err);
-        map.fitBounds(overlayBounds, {padding:[20,20]});
-        L.control.layers(
-          {'OpenStreetMap': osm, 'Satellite': satellite},
-          {'Susceptibility Raster': susceptibility},
-          {collapsed:false}
-        ).addTo(map);
-      })
-    );
+    loadKml('SettlementRiskClasses.kml').catch(() => loadKml('SettlementRiskClasses.kml').catch(() => {
+      map.fitBounds(overlayBounds, {padding:[20,20]});
+      L.control.layers({'OpenStreetMap':osm,'Satellite':satellite},{'Susceptibility Raster':susceptibility},{collapsed:false}).addTo(map);
+    }));
   </script>
-
-  <div style="position:absolute;right:12px;top:12px;z-index:1200;background:rgba(255,255,255,0.95);padding:12px 14px;border:1px solid rgba(15,23,42,0.12);border-radius:14px;box-shadow:0 12px 32px rgba(2,6,23,0.16);font-family:Inter,sans-serif;min-width:220px;">
-    <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;">Susceptibility</div>
-    <div style="height:14px;border-radius:999px;background:linear-gradient(90deg,#33a02c 0%, #ffdf00 50%, #e31a1c 100%);border:1px solid rgba(0,0,0,.12);"></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:#4b5563;margin-top:6px;"><span>0</span><span>0.5</span><span>1</span></div>
-  </div>
 </body>
 </html>
