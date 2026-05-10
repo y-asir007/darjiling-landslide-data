@@ -4,20 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Darjiling Landslide Web Map</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  //fonts.googleapis.com">
+  //fonts.gstatic.com" crossorigin>
+  //fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  //unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <style>
     :root { --high:#dc2626; --moderate:#facc15; --low:#22c55e; --panel:rgba(255,255,255,0.96); --text:#1f2937; --muted:#6b7280; --border:rgba(15,23,42,0.12); --shadow:0 12px 32px rgba(2,6,23,0.16); --radius:14px; }
     *{box-sizing:border-box} html,body,#map{height:100%;margin:0} body{font-family:'Inter',sans-serif;color:var(--text)}
     .panel{position:absolute;z-index:1200;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-    header.panel{top:12px;left:12px;width:min(440px,calc(100% - 24px));padding:16px 18px}.layers{top:128px;left:12px;width:min(340px,calc(100% - 24px));padding:14px 16px}.legend{right:12px;bottom:24px;width:min(260px,calc(100% - 24px));padding:14px 16px}
+    header.panel{top:12px;left:12px;width:min(440px,calc(100% - 24px));padding:16px 18px}.layers{left:12px;bottom:132px;width:min(340px,calc(100% - 24px));padding:14px 16px}.legend{left:12px;bottom:24px;width:min(260px,calc(100% - 24px));padding:14px 16px}
     h1{margin:0 0 5px;font-size:1.15rem} header p,.note{margin:0;color:var(--muted);font-size:.93rem;line-height:1.45}.panel h2{margin:0 0 10px;font-size:.88rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
     .item{display:flex;align-items:center;gap:10px;font-size:.95rem;margin-bottom:10px}.item:last-child{margin-bottom:0}.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:0 0 18px}
     .leaflet-control-layers{border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
     .debug{display:none}
-    @media (max-width:640px){header.panel,.layers,.legend{width:calc(100% - 24px)}.layers{top:146px}.legend{left:12px;right:12px;bottom:12px}}
+    @media (max-width:640px){header.panel,.layers,.legend{width:calc(100% - 24px)}.layers{bottom:146px}.legend{bottom:12px}}
   </style>
 </head>
 <body>
@@ -53,9 +53,7 @@
       return 1;
     }
 
-    function riskColor(v){
-      return v===3 ? '#e31a1c' : v===2 ? '#ffdf00' : '#33a02c';
-    }
+    const riskColor = v => v===3 ? '#e31a1c' : v===2 ? '#ffdf00' : '#33a02c';
 
     function formatProperties(properties){
       const rows = Object.entries(properties||{})
@@ -88,7 +86,7 @@
               weight: 1.6,
               opacity: 1,
               fillColor: riskColor(v),
-              fillOpacity: 0.48
+              fillOpacity: 0.65
             };
           },
           pointToLayer: (f, latlng) => {
@@ -115,7 +113,7 @@
 
         L.control.layers(
           {'OpenStreetMap': osm, 'Satellite': satellite},
-          {'Susceptibility Raster': susceptibility, 'ment Risk KML': kmlLayer},
+          {'Susceptibility Raster': susceptibility, 'Settlement Risk KML': kmlLayer},
           {collapsed:false}
         ).addTo(map);
       });
@@ -135,7 +133,14 @@
     );
   </script>
 
-  <div style="position:absolute;right:12px;top:12px;z-index:1200;background:rgba(255,255,255,0.95);padding:12px 14px;border:1px solid rgba(15,23,42,0.12);border-radius:14px;box-shadow:0 12px 32px rgba(2,6,23,0.16);font-family:Inter,sans-serif;min-width:220px;">
+  <div style="position:absolute;left:12px;bottom:24px;z-index:1200;background:rgba(255,255,255,0.95);padding:12px 14px;border:1px solid rgba(15,23,42,0.12);border-radius:14px;box-shadow:0 12px 32px rgba(2,6,23,0.16);font-family:Inter,sans-serif;min-width:240px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;">Risk legend</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="width:18px;height:18px;border-radius:4px;background:#e31a1c;border:1px solid rgba(0,0,0,.15);display:inline-block;"></span><span style="font-size:14px;">3 - High risk zone</span></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="width:18px;height:18px;border-radius:4px;background:#ffdf00;border:1px solid rgba(0,0,0,.15);display:inline-block;"></span><span style="font-size:14px;">2 - Moderate risk zone</span></div>
+    <div style="display:flex;align-items:center;gap:10px;"><span style="width:18px;height:18px;border-radius:4px;background:#33a02c;border:1px solid rgba(0,0,0,.15);display:inline-block;"></span><span style="font-size:14px;">1 - Low risk zone</span></div>
+  </div>
+
+  <div style="position:absolute;left:12px;bottom:130px;z-index:1200;background:rgba(255,255,255,0.95);padding:12px 14px;border:1px solid rgba(15,23,42,0.12);border-radius:14px;box-shadow:0 12px 32px rgba(2,6,23,0.16);font-family:Inter,sans-serif;min-width:240px;">
     <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;">Susceptibility</div>
     <div style="height:14px;border-radius:999px;background:linear-gradient(90deg,#33a02c 0%, #ffdf00 50%, #e31a1c 100%);border:1px solid rgba(0,0,0,.12);"></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:#4b5563;margin-top:6px;"><span>0</span><span>0.5</span><span>1</span></div>
