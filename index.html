@@ -31,11 +31,11 @@
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'}).addTo(map);
     const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Maxar, Earthstar Geographics, and the GIS User Community'});
     const overlayBounds = [[26.4515872795647, 88.0015852336498], [27.2085975694923, 88.8763646573254]];
-    const susceptibility = L.imageOverlay('./susceptibility.jpg', overlayBounds, {opacity:0.74}).addTo(map);
+    const susceptibility = L.imageOverlay('./susceptibility.png', overlayBounds, {opacity:0.74}).addTo(map);
     function riskValue(p){ const vals=[p.DN,p.dn,p._majority,p.majority]; for(const v of vals){ const n=Number(v); if([1,2,3].includes(n)) return n; } return 1; }
     function riskColor(v){ return v===3 ? '#dc2626' : v===2 ? '#facc15' : '#22c55e'; }
     function formatProperties(properties){ const rows=Object.entries(properties||{}).filter(([k,v])=>v!==null&&v!==''&&v!==undefined).map(([k,v])=>`<div style="margin-bottom:6px;"><strong>${k}</strong>: ${v}</div>`).join(''); return rows || '<strong>No attributes available</strong>'; }
-    fetch('./SettlementRiskClasses..kml').then(r=>r.text()).then(kmlText=>{
+    fetch('./SettlementRiskClasses.kml').then(r=>r.text()).then(kmlText=>{
       const kmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
       const geojson = toGeoJSON.kml(kmlDoc);
       const kmlLayer = L.geoJSON(geojson, {
